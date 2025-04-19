@@ -1,109 +1,133 @@
-import React, { useState, useEffect } from "react";
-import axios from "axios";
-import SpeechRecognition, { useSpeechRecognition } from "react-speech-recognition";
-const getATResonse =(query) => {
-  const responses ={
-    "Hi":"Hi I am your shopping assistent,How can i help you",
-    "show me partyware dress":"sure, here is a partyware dress ",
-    "show me laptops": "we have dell,lenovo,Hp,  which type of laptop do you want dear",
-    " i want a buy a mobile":"which mobile phone you have to buy , Here are some mobiles Vivo,Oppo,i phone,Samsung,Realme",
-  };
-  return responses[query] ||"sorry, I did't get that,could you rephrase?";
-};
+import React, { useState } from 'react';
+import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
+import SpeechRecognition, { useSpeechRecognition } from 'react-speech-recognition';
 
-function App() {
-  const [input, setInput] = useState("");
-  const [chat, setChat] = useState([]);
-
-
-  const {
-    transcript,
-    listening,
-    resetTranscript,
-    browserSupportsSpeechRecognition,
-  } = useSpeechRecognition();
-
-  useEffect(() => {
-    if (transcript) {
-      setInput(transcript);
-    }
-  }, [transcript]);
-
-  const handleSend = async () => {
-    if (!input.trim()) return;
-
-    const userMessage = { type: "user", text: input };
-    setChat((prevChat) => [...prevChat, userMessage]);
-
-    try {
-      const response = await axios.post("http://localhost:5000/api/message", {
-        message: input,
-      });
-
-      const botMessage = {
-        type: "bot",
-        text: response.data.reply,
-      };
-
-      setChat((prevChat) => [...prevChat, botMessage]);
-    } catch (error) {
-      console.error("Error:", error);
-    }
-
-    setInput("");
-    resetTranscript(); // Clear after sending
-  };
-
-  const handleMicClick = () => {
-    if (listening) {
-      SpeechRecognition.stopListening();
-    } else {
-      resetTranscript();
-      SpeechRecognition.startListening({ continuous: false });
-    }
-  };
-
-  if (!browserSupportsSpeechRecognition) {
-    return <p>Sorry, your browser doesn’t support speech recognition.</p>;
-  }
+function Home() {
+  const navigate = useNavigate();
 
   return (
-    <div style={{ padding: "2rem", fontFamily: "Arial", maxWidth: "600px", margin: "0 auto" }}>
-      <h2>🛍️ Virtual Shopping Assistant</h2>
-
-      <div style={{ marginBottom: "1rem", maxHeight: "300px", overflowY: "auto" }}>
-        {chat.map((msg, index) => (
-          <div
-            key={index}
-            style={{
-              textAlign: msg.type === "user" ? "right" : "left",
-              margin: "0.5rem 0",
-            }}
-          >
-            <p>
-              <strong>{msg.type === "user" ? "You" : "Assistant"}:</strong> {msg.text}
-            </p>
-          </div>
-        ))}
+    <div style={styles.homeContainer}>
+      <div style={styles.textContent} >
+        <h1 style={styles.heading}> "Hey I'm your Shopping Assistant. How can I help you?"</h1>
+        <button style={styles.button} onClick={() => navigate('/assistant')}>Click Here</button>
       </div>
-
-      <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-        <input
-          type="text"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          style={{ flexGrow: 1, padding: "0.5rem" }}
-          placeholder="Type or speak your message..."
+      <div>
+        
+        <img
+          src="C:\Users\ajayc\Downloads\zitharaimage.jpg" // replace with any image you prefer
+          alt="Shopping Preview"
+          style={styles.image}
         />
-        <button onClick={handleSend} style={{ padding: "0.5rem 1rem" }}>
-          Send
-        </button>
-        <button onClick={handleMicClick} style={{ padding: "0.5rem 1rem" }}>
-          {listening ? "🛑" : "🎤"}
-        </button>
       </div>
     </div>
   );
 }
+
+function AssistantPage() {
+  const [userInput, setUserInput] = useState('');
+  const [response, setResponse] = useState('');
+  const { transcript, listening, resetTranscript } = useSpeechRecognition();
+
+  const handleAsk = () => {
+    const question = userInput||transcript;
+let answer= 'sorry,I could not understand.please try again.';
+    if(question.toLowerCase().includes('offers')){
+      answer='we have 30% off on summer weat!';
+    }else if(question.toLowerCase().includes('i want to buy a laptop')){
+      answer='Here are the some brands.Dell,Hp,Lenovo,Acer,...';
+    }else if(question.toLowerCase().includes('hello')){
+      answer='Hello, I am your Shopping Assistant';
+    }
+    setResponse(`You asked: "${question}"AI says: ${answer}`);
+    resetTranscript();
+  };
+
+  const startListening = () => {
+    SpeechRecognition.startListening({ continuous: false });
+  };
+
+  return (
+    <div style={styles.assistantContainer}>
+      <h1 style={styles.heading}> 🛍️Virtual Shopping Assistant</h1>
+      <input
+        type="text"
+        value={userInput || transcript}
+        onChange={(e) => setUserInput(e.target.value)}
+        placeholder="Ask me about products, sizes, offers..."
+        style={styles.input}
+      />
+      <div style={styles.buttonGroup}>
+        <button style={styles.button} onClick={handleAsk}>Ask</button>
+        <button style={styles.button} onClick={startListening}>
+          {listening ? 'Listening...' : 'Use Mic'}
+        </button>
+      </div>
+      {response && <div style={styles.response}>{response}</div>}
+    </div>
+  );
+}
+
+function App() {
+  return (
+    <Router>
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/assistant" element={<AssistantPage />} />
+      </Routes>
+    </Router>
+  );
+}
+
+const styles = {
+  homeContainer: {
+    textAlign: 'center',
+    padding: '50px',
+    backgroundColor: '#f4f4f4',
+    minHeight: '100vh',
+  },
+  textContent: {
+    marginBottom: '30px',
+  },
+  heading: {
+    fontSize: '32px',
+    fontWeight: 'bold',
+  },
+  button: {
+    padding: '12px 24px',
+    margin: '10px',
+    fontSize: '16px',
+    backgroundColor: '#000',
+    color: '#fff',
+    border: 'none',
+    borderRadius: '8px',
+    cursor: 'pointer',
+  },
+  image: {
+    maxWidth: '300px',
+    borderRadius: '12px',
+  },
+  assistantContainer: {
+    padding: '40px',
+    textAlign: 'center',
+    backgroundColor: '#fff',
+    minHeight: '100vh',
+  },
+  input: {
+    padding: '10px',
+    width: '80%',
+    fontSize: '16px',
+    borderRadius: '6px',
+    border: '1px solid #ccc',
+    marginBottom: '20px',
+  },
+  buttonGroup: {
+    marginBottom: '20px',
+  },
+  response: {
+    fontSize: '18px',
+    marginTop: '20px',
+    color: '#333',
+  },
+};
 
 export default App;
